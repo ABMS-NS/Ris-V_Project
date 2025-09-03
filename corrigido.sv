@@ -299,6 +299,11 @@ module alu(input  logic [31:0] a, b,
   logic        v;              // overflow
   logic        isAddSub;       // true when is add or subtract operation
 
+  
+  //ALTERADO//
+  
+  assign zero = (result == 32'b0);// ESTAVA FORA DAS DECLARAÇÕES
+  assign v = ~(alucontrol[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & isAddSub;// ESTAVA FORA DAS DECLARAÇÕES
   assign condinvb = alucontrol[0] ? ~b : b;
   assign sum = a + condinvb + alucontrol[0];
   assign isAddSub = ~alucontrol[2] & ~alucontrol[1] |
@@ -316,9 +321,6 @@ module alu(input  logic [31:0] a, b,
       3'b111:  result = a >> b[4:0]; // srl
       default: result = 32'bx;
     endcase
-
-  assign zero = (result == 32'b0);
-  assign v = ~(alucontrol[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & isAddSub;
   
 endmodule
 
