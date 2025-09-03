@@ -1,6 +1,9 @@
 //COMPILE: iverilog.exe -g2012 -o riscvsingle_p1.vcd -tvvp .\riscvsingle_p1.sv
 //SIMULATE: vvp riscvsingle_p1
 
+
+//------------------------------ TESTBENCH ------------------------//
+
 module testbench();
 
   logic        clk;
@@ -39,6 +42,12 @@ module testbench();
     end
 endmodule
 
+
+
+//---------------------------------- COMEÇO DO CÓDIGO ----------------------------------------//
+
+
+// ---- Instancia o processador, memória de dados e memória de instrução ---- //
 module top(input  logic        clk, reset, 
            output logic [31:0] WriteData, DataAdr, 
            output logic        MemWrite);
@@ -52,6 +61,9 @@ module top(input  logic        clk, reset,
   dmem dmem(clk, MemWrite, DataAdr, WriteData, ReadData);
 endmodule
 
+
+
+// --- Contém o controle e a lógica dos dados --- //
 module riscvsingle(input  logic        clk, reset,
                    output logic [31:0] PC,
                    input  logic [31:0] Instr,
@@ -63,10 +75,13 @@ module riscvsingle(input  logic        clk, reset,
   logic [1:0] ResultSrc, ImmSrc;
   logic [2:0] ALUControl;
 
-  controller c(Instr[6:0], Instr[14:12], Instr[30], Zero,
-               ResultSrc, MemWrite, PCSrc,
+  // Interpreta instrução e gera sinais de controle que ditam o comportamento. Lê os primeiros bits e decide a operação (add, sub, lw, etc) 
+  controller c(Instr[6:0], Instr[14:12], Instr[30], Zero, 
+               ResultSrc, MemWrite, PCSrc, 
                ALUSrc, RegWrite, Jump,
                ImmSrc, ALUControl);
+  
+  // Manipulação dos dados durante execução. Unidades que fazem o cálculo real e acessam as memórias.
   datapath dp(clk, reset, ResultSrc, PCSrc,
               ALUSrc, RegWrite,
               ImmSrc, ALUControl,
@@ -179,9 +194,11 @@ module datapath(input  logic        clk, reset,
   mux3 #(32)  resultmux(ALUResult, ReadData, 32'b0, ResultSrc, Result);
 endmodule
 
+
+// --- Registradores de armazenamento temporário --- //
 module regfile(input  logic        clk, 
-               input  logic        we3, 
-               input  logic [ 4:0] a1, a2, a3, 
+               input  logic        we3, // a escrita ativa quando ele está alto
+               input  logic [ 4:0] a1, a2, a3, // a1 e a2 servem para ler
                input  logic [31:0] wd3, 
                output logic [31:0] rd1, rd2);
 
@@ -244,6 +261,7 @@ module mux3 #(parameter WIDTH = 8)
   assign y = s[1] ? d2 : (s[0] ? d1 : d0); 
 endmodule
 
+// --- Memória de instruções --- //
 module imem(input  logic [31:0] a,
             output logic [31:0] rd);
 
@@ -255,6 +273,7 @@ module imem(input  logic [31:0] a,
   assign rd = RAM[a[31:2]]; // word aligned
 endmodule
 
+// --- Memória de dados --- //
 module dmem(input  logic        clk, we,
             input  logic [31:0] a, wd,
             output logic [31:0] rd);
@@ -267,6 +286,10 @@ module dmem(input  logic        clk, we,
     if (we) RAM[a[31:2]] <= wd;
 endmodule
 
+
+
+
+// --- Módulo da ALU --- //
 module alu(input  logic [31:0] a, b,
            input  logic [2:0]  alucontrol,
            output logic [31:0] result,
@@ -298,3 +321,4 @@ module alu(input  logic [31:0] a, b,
   assign v = ~(alucontrol[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & isAddSub;
   
 endmodule
+
