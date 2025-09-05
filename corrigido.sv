@@ -66,7 +66,7 @@ endmodule
 // --- Contém o controle e a lógica dos dados --- //
 module riscvsingle(input  logic        clk, reset,
                    output logic [31:0] PC,
-                   input  logic [31:0] Instr,
+                   output  logic [31:0] Instr, //De in para output
                    output logic        MemWrite,
                    output logic [31:0] ALUResult, WriteData,
                    input  logic [31:0] ReadData);
