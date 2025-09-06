@@ -6,39 +6,46 @@
 
 module testbench();
 
+  //Declara clock e reset com 1 bit
   logic        clk;
   logic        reset;
 
+  //Declara WriteData e DataAdr com 32 bits e MemWrite com 1 bit
   logic [31:0] WriteData, DataAdr;
   logic        MemWrite;
 
   // instantiate device to be tested
+  //Testa o modulo top clck e reset são inputs e o resto saida
   top dut(clk, reset, WriteData, DataAdr, MemWrite);
   
   // initialize test
-  initial
+  initial //Não repete
     begin
-      reset <= 1; # 22; reset <= 0;
+      reset <= 1; # 22; reset <= 0; //reset é 1 espera 22 tempos e reset fica 0
     end
 
   // generate clock to sequence tests
-  always
+  always //Repete
     begin
-      clk <= 1; # 5; clk <= 0; # 5;
+      clk <= 1; # 5; clk <= 0; # 5; //Clock é 1 e depois de 5 tempos é 0
     end
 
   // check results
-  always @(negedge clk)
+  always @(negedge clk) //Sempre no clock baixo
     begin
-      if(MemWrite) begin
-        if(DataAdr === 100 & WriteData === 25) begin
-          $display("Simulation succeeded");
-          $stop;
-        end else if (DataAdr !== 96) begin
-          $display("Simulation failed");
-          $stop;
+      if(MemWrite) //Só para ficar mais fácil de ver
+        begin //Se MemWrite for 1 executa
+          if(DataAdr === 100 && WriteData === 25) 
+            begin //Se DataAdr for = 100 e WriteData = 25 //O === é para garantir sinais iguais //O & é para 1 bit
+              $display("Simulation succeeded"); //Mostre isso
+              $stop; //Pare
+            end //Mesma coisa do begin
+          else if (DataAdr !== 96) //Se DataAdr n for 96
+            begin
+              $display("Simulation failed");//Mostra isso
+              $stop;//Para
+            end
         end
-      end
     end
 endmodule
 
@@ -48,38 +55,43 @@ endmodule
 
 
 // ---- Instancia o processador, memória de dados e memória de instrução ---- //
+//Cria o modulo do top
 module top(input  logic        clk, reset, 
            output logic [31:0] WriteData, DataAdr, 
-           output logic        MemWrite);
+           output logic        MemWrite);//Clock e reset são inputs de 1 bit, WriteData e DataAdr são outputs de 32 bits, MemWrite é um output de 1 bit
 
-  logic [31:0] PC, Instr, ReadData;
+  logic [31:0] PC, Instr, ReadData; //Cria o PC, Instr e ReadData com 32 bits
   
   // instantiate processor and memories
+  //Cria rvsingle do tipo riscvsingle
   riscvsingle rvsingle(clk, reset, PC, Instr, MemWrite, DataAdr, 
-                       WriteData, ReadData);
+                       WriteData, ReadData);//linha 78
+  //cria imem do tipo imem
   imem imem(PC, Instr);
+  //cria dmem do tipo dmem
   dmem dmem(clk, MemWrite, DataAdr, WriteData, ReadData);
 endmodule
 
 
 
 // --- Contém o controle e a lógica dos dados --- //
-module riscvsingle(input  logic        clk, reset,
-                   output logic [31:0] PC,
-                   input  logic [31:0] Instr,
-                   output logic        MemWrite,
-                   output logic [31:0] ALUResult, WriteData,
-                   input  logic [31:0] ReadData);
+module riscvsingle(input  logic        clk, reset,//Clk e reset do top
+                   output logic [31:0] PC,//Pc do top
+                   input  logic [31:0] Instr,//Instr do top
+                   output logic        MemWrite,//MemWrite do top
+                   output logic [31:0] ALUResult, WriteData,//DataAdr e WriteData do top
+                   input  logic [31:0] ReadData);//ReadData do top
 
-  logic       ALUSrc, RegWrite, Jump, Zero;
-  logic [1:0] ResultSrc, ImmSrc;
-  logic [2:0] ALUControl;
+  logic       ALUSrc, RegWrite, Jump, Zero;//Isso aí com 1 bit
+  logic [1:0] ResultSrc, ImmSrc;//Isso aí com 2
+  logic [2:0] ALUControl;//Isso aí com 3
 
   // Interpreta instrução e gera sinais de controle que ditam o comportamento. Lê os primeiros bits e decide a operação (add, sub, lw, etc) 
+  //Usa o modulo controller
   controller c(Instr[6:0], Instr[14:12], Instr[30], Zero, 
                ResultSrc, MemWrite, PCSrc, 
                ALUSrc, RegWrite, Jump,
-               ImmSrc, ALUControl);
+               ImmSrc, ALUControl);//linha 104
   
   // Manipulação dos dados durante execução. Unidades que fazem o cálculo real e acessam as memórias.
   datapath dp(clk, reset, ResultSrc, PCSrc,
@@ -89,22 +101,23 @@ module riscvsingle(input  logic        clk, reset,
               ALUResult, WriteData, ReadData);
 endmodule
 
-module controller(input  logic [6:0] op,
-                  input  logic [2:0] funct3,
-                  input  logic       funct7b5,
-                  input  logic       Zero,
-                  output logic [1:0] ResultSrc,
-                  output logic       MemWrite,
-                  output logic       PCSrc, ALUSrc,
-                  output logic       RegWrite, Jump,
-                  output logic [1:0] ImmSrc,
-                  output logic [2:0] ALUControl);
+module controller(input  logic [6:0] op,//Instr[6:0] do riscvsingle
+                  input  logic [2:0] funct3,//Instr[14:12] do riscvsingle
+                  input  logic       funct7b5,//Instr[30] do riscvsingle
+                  input  logic       Zero,//Zero do riscvsingle
+                  output logic [1:0] ResultSrc,//ResultSrc do riscvsingle
+                  output logic       MemWrite,//MemWrite do riscvsingle
+                  output logic       PCSrc, ALUSrc,//PCSrc e ALUSrc do riscvsingle
+                  output logic       RegWrite, Jump,//RegWrite e jump do riscvsingle
+                  output logic [1:0] ImmSrc,//ImmSrc do riscvsingle
+                  output logic [2:0] ALUControl);//ALUControl do riscvsingle
 
   logic [1:0] ALUOp;
   logic       Branch;
 
   maindec md(op, ResultSrc, MemWrite, Branch,
-             ALUSrc, RegWrite, Jump, ImmSrc, ALUOp);
+             ALUSrc, RegWrite, Jump, ImmSrc, ALUOp);//126
+  
   aludec  ad(op[5], funct3, funct7b5, ALUOp, ALUControl);
 
   assign PCSrc = Branch & Zero;
