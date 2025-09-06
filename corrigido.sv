@@ -30,15 +30,19 @@ module testbench();
   // check results
   always @(negedge clk)
     begin
-      if(MemWrite) begin
-        if(DataAdr === 100 & WriteData === 25) begin
-          $display("Simulation succeeded");
-          $stop;
-        end else if (DataAdr !== 96) begin
-          $display("Simulation failed");
-          $stop;
+      if(MemWrite) 
+        begin
+          if(DataAdr === 100 & WriteData === 25) begin
+            $display("Simulation succeeded");
+            $stop;
+        end 
+        else 
+          if (DataAdr !== 96) 
+            begin
+            $display("Simulation failed");
+            $stop;
+            end
         end
-      end
     end
 endmodule
 
@@ -71,7 +75,7 @@ module riscvsingle(input  logic        clk, reset,
                    output logic [31:0] ALUResult, WriteData,
                    input  logic [31:0] ReadData);
 
-  logic       ALUSrc, RegWrite, Jump, Zero;
+  logic       ALUSrc, RegWrite, Jump, Zero, PCSrc;//PCSrc não tava declarado
   logic [1:0] ResultSrc, ImmSrc;
   logic [2:0] ALUControl;
 
@@ -121,7 +125,7 @@ module maindec(input  logic [6:0] op,
   logic [10:0] controls;
 
   assign {RegWrite, ImmSrc, ALUSrc, MemWrite,
-          ResultSrc, Branch, ALUOp} = controls;
+          ResultSrc, Branch, ALUOp, Jump} = controls;//Jump n tava cocatenando e ele pede no case
 
   always_comb
     case(op)
@@ -306,8 +310,7 @@ module alu(input  logic [31:0] a, b,
   assign v = ~(alucontrol[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & isAddSub;// ESTAVA FORA DAS DECLARAÇÕES
   assign condinvb = alucontrol[0] ? ~b : b;
   assign sum = a + condinvb + alucontrol[0];
-  assign isAddSub = ~alucontrol[2] & ~alucontrol[1] |
-                    ~alucontrol[1] & alucontrol[0];
+  assign isAddSub = ~alucontrol[2] & ~alucontrol[1] | ~alucontrol[1] & alucontrol[0];
 
   always_comb
     case (alucontrol)
