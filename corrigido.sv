@@ -32,7 +32,7 @@ module testbench();
     begin
       if(MemWrite) 
         begin
-          if(DataAdr === 100 & WriteData === 25) begin
+          if(DataAdr === 100 && WriteData === 25) begin
             $display("Simulation succeeded");
             $stop;
         end 
@@ -232,10 +232,11 @@ module extend(input  logic [31:7] instr,
  
   always_comb
     case(immsrc) 
-      2'b01:   immext = {{20{instr[31]}}, instr[31:25], instr[11:7]}; 
-               // B-type (branches)
-      2'b11:   immext = {{12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0}; 
-      default: immext = 32'bx; // undefined
+      2'b00:   immext = {{20{instr[31]}}, instr[31:20]}; // I-type (lw, addi, etc.)
+      2'b01:   immext = {{20{instr[31]}}, instr[31:25], instr[11:7]}; // S-type (sw)
+      2'b10:   immext = {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0}; // B-type (beq)
+      2'b11:   immext = {{12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0}; // J-type
+      default: immext = 32'bx;
     endcase             
 endmodule
 
