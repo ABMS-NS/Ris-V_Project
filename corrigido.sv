@@ -70,7 +70,7 @@ endmodule
 // --- Contém o controle e a lógica dos dados --- //
 module riscvsingle(input  logic        clk, reset,
                    output logic [31:0] PC,
-                   output  logic [31:0] Instr, //De in para output
+                   input  logic [31:0] Instr,
                    output logic        MemWrite,
                    output logic [31:0] ALUResult, WriteData,
                    input  logic [31:0] ReadData);
@@ -111,7 +111,7 @@ module controller(input  logic [6:0] op,
              ALUSrc, RegWrite, Jump, ImmSrc, ALUOp);
   aludec  ad(op[5], funct3, funct7b5, ALUOp, ALUControl);
 
-  assign PCSrc = Branch & Zero;
+  assign PCSrc = Branch & Zero | Jump;//Faltava o jump
 endmodule
 
 module maindec(input  logic [6:0] op,
@@ -131,9 +131,12 @@ module maindec(input  logic [6:0] op,
     case(op)
     // RegWrite_ImmSrc_ALUSrc_MemWrite_ResultSrc_Branch_ALUOp_Jump
       7'b0000011: controls = 11'b1_00_1_0_01_0_00_0; // lw
+      7'b0010011: controls = 11'b1_00_1_0_00_0_10_0; // addi não estava inplementado
       7'b0100011: controls = 11'b0_01_1_1_00_0_00_0; // sw
       7'b0110011: controls = 11'b1_xx_0_0_00_0_10_0; // R-type 
       7'b1100011: controls = 11'b0_10_0_0_00_1_01_0; // beq
+      7'b1101111: controls = 11'b1_11_0_0_10_0_00_1; // jal não estava implementado
+      
       default:    controls = 11'bx_xx_x_x_xx_x_xx_x; // non-implemented instruction
     endcase
 endmodule
@@ -195,7 +198,7 @@ module datapath(input  logic        clk, reset,
   // ALU logic
   mux2 #(32)  srcbmux(WriteData, ImmExt, ALUSrc, SrcB);
   alu         alu(SrcA, SrcB, ALUControl, ALUResult, Zero);
-  mux3 #(32)  resultmux(ALUResult, ReadData, 32'b0, ResultSrc, Result);
+  mux3 #(32)  resultmux(ALUResult, ReadData, PCPlus4, ResultSrc, Result); //no lugar de pCPlus era 0
 endmodule
 
 
@@ -263,7 +266,7 @@ module mux3 #(parameter WIDTH = 8)
               input  logic [1:0]       s, 
               output logic [WIDTH-1:0] y);
 
-  assign y = s[1] ? d2 : (s[0] ? d1 : d0); 
+  assign y = s[1] ? d2 : (s[0] ? d1 : d0); //y é d2 se s[1] = 1 e ((s[0] ? d1 : d0)) se for = 0, que é d1 se s[0] for = 1 e d0 s[0] = 0
 endmodule
 
 // --- Memória de instruções --- //
