@@ -216,34 +216,36 @@ module hazard(input  logic [4:0] Rs1D, Rs2D, Rs1E, Rs2E,
 
   logic lwStall;
 
-  // Forwarding logic for source A
+  // Forwarding logic for source A in Execute stage
   always_comb begin
     if ((Rs1E == RdM) && RegWriteM && (Rs1E != 0))
-      ForwardAE = 2'b10;
+      ForwardAE = 2'b10;  // Forward from Memory stage
     else if ((Rs1E == RdW) && RegWriteW && (Rs1E != 0))
-      ForwardAE = 2'b01;
+      ForwardAE = 2'b01;  // Forward from Writeback stage
     else
-      ForwardAE = 2'b00;
+      ForwardAE = 2'b00;  // No forwarding
   end
 
-  // Forwarding logic for source B
+  // Forwarding logic for source B in Execute stage
   always_comb begin
     if ((Rs2E == RdM) && RegWriteM && (Rs2E != 0))
-      ForwardBE = 2'b10;
+      ForwardBE = 2'b10;  // Forward from Memory stage
     else if ((Rs2E == RdW) && RegWriteW && (Rs2E != 0))
-      ForwardBE = 2'b01;
+      ForwardBE = 2'b01;  // Forward from Writeback stage
     else
-      ForwardBE = 2'b00;
+      ForwardBE = 2'b00;  // No forwarding
   end
 
-  // Load-use hazard detection - CORRIGIDO
-  assign lwStall = ResultSrcEb0 && (((Rs1D == RdE) && (RdE != 0)) || 
-                                     ((Rs2D == RdE) && (RdE != 0)));
+  // Load-use hazard detection (stall needed)
+  assign lwStall = ResultSrcEb0 && ((Rs1D == RdE) || (Rs2D == RdE));
 
+  // Stall signals
   assign StallF = lwStall;
   assign StallD = lwStall;
-  assign FlushD = PCSrcE;
-  assign FlushE = lwStall | PCSrcE;
+
+  // Flush signals
+  assign FlushD = PCSrcE;           // Flush decode on branch/jump taken
+  assign FlushE = lwStall | PCSrcE; // Flush execute on stall or branch taken
 
 endmodule
 
