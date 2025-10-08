@@ -89,7 +89,7 @@ module riscv(input  logic        clk, reset,
               RegWriteW, ResultSrcW,
               Rs1D, Rs2D, Rs1E, Rs2E, RdE, RdM, RdW);
 
-  // *** ADIÇÃO: Instanciação da Hazard Unit ***
+  // *** ADIÇÃO: Hazard Unit ***
   hazard hu(Rs1D, Rs2D, Rs1E, Rs2E, RdE, RdM, RdW,
             PCSrcE, ResultSrcEb0, RegWriteM, RegWriteW,
             ForwardAE, ForwardBE, StallF, StallD, FlushD, FlushE);
@@ -204,7 +204,7 @@ module aludec(input  logic       opb5,
     endcase
 endmodule
 
-// *** ADIÇÃO: Módulo Hazard Unit Completo ***
+// ***Hazard Unit Completo ***
 module hazard(input  logic [4:0] Rs1D, Rs2D, Rs1E, Rs2E,
               input  logic [4:0] RdE, RdM, RdW,
               input  logic       PCSrcE,
